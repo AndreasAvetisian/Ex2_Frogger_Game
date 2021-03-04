@@ -1,0 +1,739 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>The Frogger</title>
+    <style>
+        body { 
+          margin: 0;
+          background-color: black;
+        }
+        #target { 
+          display: block;
+          margin: 0 auto;
+        }
+      </style>
+</head>
+<body>
+<canvas id="target"></canvas>
+<script>
+const canvas = document.getElementById('target');
+const context = canvas.getContext('2d');
+
+canvas.width = 672;
+canvas.height = 744;
+
+let score = 0;
+let goUpCounter = 12;
+
+let life = 3;
+
+let frogIcon1 = false;
+let frogIcon2 = false;
+let frogIcon3 = false;
+let frogIcon4 = false;
+let frogIcon5 = false;
+
+let threeTurtleMovementCounter = 0;
+let twoTurtleMovementCounter = 0;
+
+setInterval(function() {
+    threeTurtleMovementCounter = threeTurtleMovementCounter + 32;
+    if (threeTurtleMovementCounter > 161) {
+        threeTurtleMovementCounter = 0;
+    }
+}, 500)
+setTimeout(function() {
+    setInterval(function() {
+        twoTurtleMovementCounter = twoTurtleMovementCounter + 32;
+        if (twoTurtleMovementCounter > 65) {
+            twoTurtleMovementCounter = 0;
+        }
+    }, 400)
+}, 50)
+
+let timeCounter = 40;
+let intervalId = setInterval(function() {
+    timeCounter--;
+    if (timeCounter < 0) {
+        timeCounter = 40;
+        playerLifeObject.pop();
+        life--;
+    }
+}, 1000)
+
+// -----------Images------------------------------------------------------------------------------------
+
+const ground = new Image();
+ground.src = "img/background.png";
+
+const car1 = new Image();
+car1.src = "img/Cars/car1.png";
+
+const car2 = new Image();
+car2.src = "img/Cars/car2.png";
+
+const car3 = new Image();
+car3.src = "img/Cars/car3.png";
+
+const car4 = new Image();
+car4.src = "img/Cars/car4.png";
+
+const car5 = new Image();
+car5.src = "img/Cars/car5.png";
+
+const frogSheet = new Image();
+frogSheet.src = "img/frogSheet.png"
+
+const threeTurtlesSheet = new Image(); 
+threeTurtlesSheet.src = "img/Turtles/threeTurtlesSheet.png"
+
+const twoTurtlesSheet = new Image(); 
+twoTurtlesSheet.src = "img/Turtles/twoTurtlesSheet.png"
+
+const log_short = new Image();
+log_short.src = "img/log_short.png"
+
+const log_medium = new Image();
+log_medium.src = "img/log_medium.png"
+
+const log_long = new Image();
+log_long.src = "img/log_long.png"
+
+const the_finish = new Image();
+the_finish.src = "img/goal_frog_0.png"
+
+const grass = new Image();
+grass.src = "img/grass.png"
+
+const timerImg = new Image();
+timerImg.src = "img/timer.png"
+
+// -----------Objects-----------------------------------------------------------------------------------
+
+class GameObject {
+    constructor(x, y, width, height, speedX, speedY, image) {
+        this.x = x;
+        this.y = y;
+        this.width = width;
+        this.height = height;
+        this.speedX = speedX;
+        this.speedY = speedY;
+        this.image = image;
+    }
+
+    update() {
+        this.x = this.x + this.speedX * deltaTime / 1000;
+        this.y = this.y + this.speedY * deltaTime / 1000;
+    }
+
+    draw() {
+
+    }
+}
+
+class Player extends GameObject {
+    constructor(startX, startY, width, height, speedX, speedY, image) {
+        super(startX, startY, width, height, speedX, speedY, image);
+        this.frameCounter = 0;
+        this.animationFrames = 2;
+        this.frameTimeCounter = 0;
+        this.frameRate = 3;
+        this.movementDirection = "UP";
+    }
+
+    moveUp() {
+        if (player.y < 73) {
+            console.log('You can not go up.')
+            return;
+        }
+        
+        this.movementDirection = "UP";
+
+        goUpCounter--;
+        if (goUpCounter > 0) {
+           score = score + 10; 
+        }
+        
+        this.y = this.y - this.speedY;
+    }
+
+    moveDown() {
+        if (player.y > canvas.height - 97) {
+            console.log('You can not go down.')
+            return;
+        }
+        
+        this.movementDirection = "DOWN";
+        goUpCounter++;
+        if (goUpCounter < 13) {
+           score = score - 10; 
+        }
+        
+        this.y = this.y + this.speedY;
+    }
+
+    moveLeft() {
+        if (player.x < 48) {
+            console.log('You can not go left.');
+            return;
+        }
+        this.movementDirection = "LEFT";
+        
+        this.x = this.x - this.speedX;
+    }
+
+    moveRight() {
+        if (player.x > canvas.width - 49) {
+            console.log('You can not go right.');
+            return;
+        }
+        this.movementDirection = "RIGHT";
+       
+        this.x = this.x + this.speedX;
+    }
+
+    update(deltaTime) {
+        if (this.x < -30 || this.x > canvas.width - 18) {
+            this.x = 336;
+            this.y = 648;
+            life--;
+            goUpCounter = 12;
+            timeCounter = 40;
+            playerLifeObject.pop();
+        }
+
+        this.frameTimeCounter += deltaTime;
+        if(this.frameTimeCounter > 1000 / this.frameRate) {
+            this.frameTimeCounter = 0;
+        
+            this.frameCounter++;
+        
+            if(this.frameCounter >= this.animationFrames) {
+                this.frameCounter = 0;
+            }
+        }
+    }
+
+    draw() {
+        // ------ Hitbox --------
+        // context.beginPath();
+        // context.rect(this.x, this.y, 48, 48);
+        // context.fillStyle = 'green';
+        // context.fill();
+        if (timeCounter == 0) {
+            player.x = 336;
+            player.y = 648;
+        }
+        let animationFrameStartCoordX = 0;
+            switch(this.movementDirection) {
+                case "UP":
+                    animationFrameStartCoordX = 0;
+                    break;
+                case "DOWN":
+                    animationFrameStartCoordX = 96;
+                    break;
+                case "LEFT":
+                    animationFrameStartCoordX = 192;
+                    break;
+                case "RIGHT":
+                    animationFrameStartCoordX = 288;
+                    break;
+            }
+            context.drawImage(frogSheet, animationFrameStartCoordX + this.frameCounter * 48, 0, 48, 48, this.x, this.y, this.width, this.height); 
+    }   
+}
+
+
+class PlayerLife extends GameObject {
+    update() {
+
+    }
+
+    draw() {
+        context.drawImage(frogSheet, 0, 0, 48, 48, this.x, this.y, this.width, this.height);
+    }
+}
+
+class Timer extends GameObject {
+    update() {
+        
+    }
+
+    draw() {
+        context.drawImage(timerImg, timeCounter*6 - 240, 0, 240, 20, this.x, this.y, this.width, this.height);
+    }
+}
+
+class Cars extends GameObject {
+  update() {
+    this.x = this.x + this.speedX;
+    // -------------------------------- Teleportation ------------------------------------
+    if (this.x <= -96) {
+        this.x = 768;
+    }
+
+    if (this.x > canvas.width + 96) {
+        this.x = -48;
+    }
+    // -----------------------------------------------------------------------------------
+
+    if (((this.x + this.width) > player.x) && (this.x < (player.x + player.width)) && ((this.y + this.height) > player.y) && (this.y < (player.y + player.height))) {
+        player.x = 336;
+        player.y = 648;
+        life--;
+        goUpCounter = 12;
+        timeCounter = 40;
+        playerLifeObject.pop();
+    }
+}
+
+  draw() {
+        // ------ Hitbox --------
+        // context.beginPath();
+        // context.rect(this.x, this.y, this.width, this.height);
+        // context.fillStyle = 'red';
+        // context.fill();  
+        context.drawImage(this.image, this.x, this.y);
+    }
+}
+
+class ThreeTurtles extends GameObject{
+    update() {
+        this.x = this.x + this.speedX;
+
+        // -------------------------------- Teleportation ------------------------------------
+        if (this.x <= -124) {
+            this.x = canvas.width;
+        }
+        // -----------------------------------------------------------------------------------
+
+        //---------------------------- Frog movement on turtles ------------------------------
+        if (((this.x + this.width-5) > player.x) && (this.x < (player.x + player.width-5)) && 
+        ((this.y + this.height) > player.y) && (this.y < (player.y + player.height))) {
+            player.x = player.x + this.speedX;
+        } 
+        if (((this.x + this.width-5) > player.x) && (this.x < (player.x + player.width-5)) && 
+        ((this.y + this.height) > player.y) && (this.y < (player.y + player.height)) && (threeTurtleMovementCounter == 160)) {
+            player.x = 336;
+            player.y = 648;
+            life--;
+            goUpCounter = 12;
+            timeCounter = 40;
+            playerLifeObject.pop();
+        }
+    }
+    
+    draw() {
+        // ------ Hitbox --------
+        // context.beginPath();
+        // context.rect(this.x, this.y, 124, 32);
+        // context.fillStyle = 'red';
+        // context.fill();
+        context.drawImage(threeTurtlesSheet, 0, threeTurtleMovementCounter, 124, 32, this.x, this.y, this.width, this.height);
+    }
+}
+
+class TwoTurtles extends GameObject{
+    update() {
+        this.x = this.x + this.speedX;
+
+        // -------------------------------- Teleportation ------------------------------------
+        if (this.x <= -82) {
+            this.x = canvas.width + 82;
+        }
+        // -------------------------------- Teleportation ------------------------------------
+
+        //-------------------------- Movement of a frog on a log -----------------------------
+        if (((this.x + this.width-5) > player.x) && (this.x < (player.x + player.width-5)) && 
+        ((this.y + this.height) > player.y) && (this.y < (player.y + player.height))) {
+            player.x = player.x + this.speedX;
+        } 
+        if (((this.x + this.width-5) > player.x) && (this.x < (player.x + player.width-5)) && 
+        ((this.y + this.height) > player.y) && (this.y < (player.y + player.height)) && (twoTurtleMovementCounter == 160)) {
+            player.x = 336;
+            player.y = 648;
+            life--;
+            goUpCounter = 12;
+            timeCounter = 40;
+            playerLifeObject.pop();
+        }
+    }
+    
+    draw() {
+        // ------ Hitbox --------
+        // context.beginPath();
+        // context.rect(this.x, this.y, 82, 32);
+        // context.fillStyle = 'red';
+        // context.fill();
+        context.drawImage(twoTurtlesSheet, 0, twoTurtleMovementCounter, 82, 32, this.x, this.y, this.width, this.height);
+    }
+}
+
+class InvisibleZone extends GameObject {
+    update() {
+        this.x = this.x + this.speedX;
+
+        // -------------------------------- Teleportation ------------------------------------
+        if (this.width == 114 && this.x <= -114) {
+            this.x = canvas.width + 10;
+        } else if (this.width == 170 && this.x >= canvas.width + 22) {
+            this.x = -170;
+        } else if (this.width == 130 && this.x >= canvas.width + 253) {
+            this.x = -130;
+        } else if (this.width == 105 && this.x <= -104) {
+            this.x = canvas.width + 60;
+        } else if (this.width == 80 && this.x >= canvas.width + 208) {
+            this.x = -80;
+        }
+        // -----------------------------------------------------------------------------------
+
+        if (((this.x + this.width-20) > player.x) && (this.x < (player.x + player.width-25)) && 
+        ((this.y + this.height) > player.y) && (this.y < (player.y + player.height)) && 
+        (this.width == 114 || this.width == 170 || this.width == 130 || this.width == 105 || this.width == 80)) { // water
+            player.x = 336;
+            player.y = 648; 
+            life--;
+            goUpCounter = 12;
+            timeCounter = 40;
+            playerLifeObject.pop();
+        } else if (((this.x + this.width-10) > player.x) && (this.x < (player.x + player.width-10)) && 
+        ((this.y + this.height) > player.y) && (this.y < (player.y + player.height)) && (this.width == 60)) { // grass
+            player.x = 336;
+            player.y = 648; 
+            life--;
+            goUpCounter = 12;
+            timeCounter = 40;
+            playerLifeObject.pop();
+        } 
+    }
+
+    draw() {
+        // context.beginPath();
+        // context.rect(this.x, this.y, this.width, this.height);
+        // context.fillStyle = 'red';
+        // context.fill();
+        if (this.width == 114 || this.width == 170 || this.width == 130 || this.width == 105 || this.width == 80) {
+            context.fillStyle = 'rgb(24, 48, 172)'; // water
+        } else if (this.width == 60) {
+            context.drawImage(grass, this.x, this.y); // grass
+        } 
+    }
+}
+class FinishHitBox extends GameObject {
+    update() {
+        if (((this.x + this.width+5) > player.x) && (this.x < (player.x + player.width+5)) && 
+            ((this.y + this.height) > player.y) && (this.y < (player.y + player.height)) && (this.width == 34) && (frogIcon1 == false)) {
+            player.x = 336;
+            player.y = 648;
+            score = score + (timeCounter*5);
+            goUpCounter = 12;
+            timeCounter = 40;
+            frogIcon1 = true;
+        }
+        if (((this.x + this.width+5) > player.x) && (this.x < (player.x + player.width+5)) && 
+            ((this.y + this.height) > player.y) && (this.y < (player.y + player.height)) && (this.width == 35) && (frogIcon2 == false)) {
+            player.x = 336;
+            player.y = 648;
+            score = score + (timeCounter*5);
+            goUpCounter = 12;
+            timeCounter = 40;
+            frogIcon2 = true;
+        }
+        if (((this.x + this.width+5) > player.x) && (this.x < (player.x + player.width+5)) && 
+            ((this.y + this.height) > player.y) && (this.y < (player.y + player.height)) && (this.width == 36) && (frogIcon3 == false)) {
+            player.x = 336;
+            player.y = 648;
+            score = score + (timeCounter*5);
+            goUpCounter = 12;
+            timeCounter = 40;
+            frogIcon3 = true;
+        } 
+        if (((this.x + this.width+5) > player.x) && (this.x < (player.x + player.width+5)) && 
+            ((this.y + this.height) > player.y) && (this.y < (player.y + player.height)) && (this.width == 37) && (frogIcon4 == false)) {
+            player.x = 336;
+            player.y = 648;
+            score = score + (timeCounter*5);
+            goUpCounter = 12;
+            timeCounter = 40;
+            frogIcon4 = true;
+        }
+        if (((this.x + this.width+5) > player.x) && (this.x < (player.x + player.width+5)) && 
+            ((this.y + this.height) > player.y) && (this.y < (player.y + player.height)) && (this.width == 38) && (frogIcon5 == false)) {
+            player.x = 336;
+            player.y = 648;
+            score = score + (timeCounter*5);
+            goUpCounter = 12;
+            timeCounter = 40;
+            frogIcon5 = true;
+        }
+    }
+    draw() {
+        
+    }
+}
+class FinishIcon extends GameObject {
+    update() {
+
+    }
+    draw() {
+        if (frogIcon1 == true) {
+            context.drawImage(the_finish, 50, 74);
+        }
+        if (frogIcon2 == true) {
+            context.drawImage(the_finish, 185, 74);
+        }
+        if (frogIcon3 == true) {
+            context.drawImage(the_finish, 320, 74);
+        }
+        if (frogIcon4 == true) {
+            context.drawImage(the_finish, 455, 74);
+        }
+        if (frogIcon5 == true) {
+            context.drawImage(the_finish, 590, 74);
+        }
+    }
+}
+
+class Logs extends GameObject {
+    update() {
+        this.x = this.x + this.speedX;
+
+        // -------------------------------- Teleportation ------------------------------------
+        if ((this.width == 96) && (this.x >= canvas.width + 96)) {
+            this.x = -96;
+        } else if ((this.width == 144) && (this.x >= canvas.width + 144)) {
+            this.x = -144;
+        } else if ((this.width == 192) && (this.x >= canvas.width + 192)) {
+            this.x = -192;
+        }
+        //-------------------------- Movement of a frog on a log -----------------------------
+        if (((this.x + this.width-5) > player.x) && (this.x < (player.x + player.width-5)) && 
+        ((this.y + this.height) > player.y) && (this.y < (player.y + player.height))) {
+            player.x = player.x + this.speedX;
+        }
+    }
+
+    draw() {
+        context.drawImage(this.image, this.x, this.y);
+    }
+}
+
+// -----------Get random function-----------------------------------------------------------------------
+
+function getRandomBetween(min, max) {
+    return Math.floor(Math.random() * (max - min + 1) + min);
+}
+
+// -----------Inserting objects-------------------------------------------------------------------------
+
+const player = new Player(336, 648, 48, 48, 48, 48);
+const gameObjectStorage = [];
+gameObjectStorage.push(player);
+
+const playerLifeObject = [];
+for(let i = 1; i < 3; i++) {
+    playerLifeObject.push(new PlayerLife(25 * i - 25, 705, 36, 36)); // Quantity of lives
+}
+
+let timer = new Timer(210, 715, 240, 20);
+// -----------------------------------------------------------------------------------------------------
+console.log('========Car1=======');
+for(let i = 1; i < getRandomBetween(3,5); i++) {
+    gameObjectStorage.push(new Cars(getRandomBetween(150, 200) + getRandomBetween(168, 216) * i - 100, 605, 42, 36, -0.9, 0, car1));
+    console.log(getRandomBetween(150, 200) + getRandomBetween(168, 216) * i);
+}
+console.log('========Car2=======');
+for(let i = 1; i < getRandomBetween(3,5); i++) {
+    gameObjectStorage.push(new Cars(getRandomBetween(100, 180) + getRandomBetween(168, 216) * 2*i, 557, 42, 36, 0.8, 0, car2));
+    console.log(getRandomBetween(100, 180) + getRandomBetween(168, 216) * 2*i);
+}
+console.log('========Car3=======');
+for(let i = 1; i < getRandomBetween(3,4); i++) {
+    gameObjectStorage.push(new Cars(getRandomBetween(100, 180) + getRandomBetween(196, 243) * 2*i, 509, 42, 36, -1.1, 0, car3));
+    console.log(getRandomBetween(100, 180) + getRandomBetween(196, 243) * 2*i);
+}
+console.log('========Car4=======');
+for(let i = 1; i < 2; i++) {
+    gameObjectStorage.push(new Cars(getRandomBetween(0, canvas.width), 461, 42, 36, 1.5, 0, car4));
+    console.log(getRandomBetween(0, canvas.width));
+}
+console.log('========Car5=======');
+for(let i = 1; i < 3; i++) {
+    gameObjectStorage.push(new Cars(400 * i, 416, 70, 30, -1.2, 0, car5));
+    console.log(400 * i);
+}
+console.log('======Three Turtles======');
+for(let i = 1; i < 4; i++) {
+    gameObjectStorage.push(new ThreeTurtles(265 * i, 320, 124, 32, -1, 0));
+    console.log(265 * i);
+}
+console.log('======Water Place №1======');
+for(let i = 1; i < 4; i++) {
+    gameObjectStorage.push(new InvisibleZone(265 * i - 130, 320, 114, 32, -1, 0));
+    console.log(265 * i - 130);
+}
+console.log('=======Small Logs=======');
+for(let i = 1; i < 4; i++) {
+    gameObjectStorage.push(new Logs(1000 - 290 * i, 272, 96, 32, 0.8, 0, log_short));
+    console.log(1000 - 290 * i);
+}
+console.log('=======Water Place №2=======');
+for(let i = 1; i < 4; i++) {
+    gameObjectStorage.push(new InvisibleZone(530 - 290 * i, 272, 170, 32, 0.8, 0));
+    console.log(530 - 290 * i);
+}
+console.log('=======Long Logs=======');
+for(let i = 1; i < 4; i++) {
+    gameObjectStorage.push(new Logs(500 - 350 * i, 224, 192, 32, 1.8, 0, log_long));
+    console.log(500 - 350 * i);
+}
+console.log('=======Water Place №3=======');
+for(let i = 1; i < 4; i++) {
+    gameObjectStorage.push(new InvisibleZone(705 - 350 * i, 224, 130, 32, 1.8, 0));
+    console.log(705 - 350 * i);
+}
+console.log('=======Two Turtles=======');
+for(let i = 1; i < 5; i++) {
+    gameObjectStorage.push(new TwoTurtles(100 + 210 * i, 176, 82, 32, -1.6, 0));
+    console.log(100 + 210 * i);
+}
+console.log('======Water Place №4======');
+for(let i = 1; i < 5; i++) {
+    gameObjectStorage.push(new InvisibleZone(210 * i - 20, 176, 105, 32, -1.6, 0));
+    console.log(210 * i - 20);
+}
+console.log('=======Medium Logs=======');
+for(let i = 1; i < 5; i++) {
+    gameObjectStorage.push(new Logs(200 - 240 * i, 128, 144, 32, 1.5, 0, log_medium));
+    console.log(200 - 240 * i);
+}
+console.log('=======Water Place №5=======');
+for(let i = 1; i < 5; i++) {
+    gameObjectStorage.push(new InvisibleZone(353 - 240 * i, 128, 80, 32, 1.5, 0));
+    console.log(353 - 240 * i);
+}
+console.log('============================');
+// ------------------------------ The Finish ------------------------------------
+
+let finishHitBox1 = new FinishHitBox(50, 74, 34, 40, 0, 0);
+let finishHitBox2 = new FinishHitBox(185, 74, 35, 40, 0, 0);
+let finishHitBox3 = new FinishHitBox(320, 74, 36, 40, 0, 0);
+let finishHitBox4 = new FinishHitBox(455, 74, 37, 40, 0, 0);
+let finishHitBox5 = new FinishHitBox(590, 74, 38, 40, 0, 0);
+let finishIcon = new FinishIcon(50, 74, 34, 40, 0, 0);
+
+// ------------------------------ Grass Place ------------------------------------
+for(let i = 1; i < 7; i++) {
+    gameObjectStorage.push(new InvisibleZone(135 * i - 165, 82, 60, 32, 0, 0));
+}
+// -------------------------------------------------------------------------------
+
+
+let lastTimeStamp = 0;
+let loseText1 = "You lose."
+let winText1 = "You win!"
+let loseText2 = "Press R to start again."
+function updateScreen(timeStamp) {
+    let deltaTime = timeStamp - lastTimeStamp;
+    lastTimeStamp = timeStamp;
+
+    // clear the canvas
+    context.clearRect(0,0,canvas.width,canvas.height);
+    context.drawImage(ground, 0, 0);
+
+    for(let i = 0; i < gameObjectStorage.length; i++) {
+        gameObjectStorage[i].update(deltaTime);
+        gameObjectStorage[i].draw();
+    }
+
+    for(let i = 0; i < playerLifeObject.length; i++) {
+        playerLifeObject[i].update(deltaTime);
+        playerLifeObject[i].draw();
+    }
+
+    player.draw();
+
+    finishHitBox1.update();
+    finishHitBox2.update();
+    finishHitBox3.update();
+    finishHitBox4.update();
+    finishHitBox5.update();
+    finishIcon.draw();
+    
+    timer.draw();
+
+    context.fillStyle = 'white';
+    context.font = '50px Arial';
+    context.fillText(score, 10, 40);
+
+    // context.fillStyle = 'white';
+    // context.font = '50px Arial';
+    // context.fillText(timeCounter, 600, 740);
+
+    window.requestAnimationFrame(updateScreen);
+    if (life == 0) {
+        clearInterval(intervalId);
+        
+        context.beginPath();
+        context.rect(0, 280, canvas.width, 220);
+        context.fillStyle = 'red';
+        context.fill();
+
+        context.fillStyle = 'black';
+        context.font = '100px Arial';
+        context.fillText(loseText1, 150, canvas.height/2);
+        context.font = '50px Arial';
+        context.fillText(loseText2, 105, canvas.height/2 + 100);
+    } else if ((frogIcon1 == true) && (frogIcon2 == true) && (frogIcon3 == true) && (frogIcon4 == true) && (frogIcon5 == true)) {
+        clearInterval(intervalId);
+       
+        context.beginPath();
+        context.rect(0, 280, canvas.width, 220);
+        context.fillStyle = 'green';
+        context.fill();
+
+        context.fillStyle = 'red';
+        context.font = '100px Arial';
+        context.fillText(winText1, 150, canvas.height/2);
+        context.font = '50px Arial';
+        context.fillText(loseText2, 105, canvas.height/2 + 100);
+    }
+}
+
+window.requestAnimationFrame(updateScreen);
+
+window.addEventListener('keydown', function(event) {
+    // console.log(event.keyCode)
+    if (life == 0) {
+        return;
+    }
+    if ((frogIcon1 == true) && (frogIcon2 == true) && (frogIcon3 == true) && (frogIcon4 == true) && (frogIcon5 == true)) {
+        return;
+    }
+    switch(event.keyCode) {
+        case 65:
+            player.moveLeft();
+            break;
+        case 87:
+            player.moveUp();
+            break;
+        case 68:
+            player.moveRight();
+            break;
+        case 83:
+            player.moveDown();
+            break; 
+    }
+});
+
+window.addEventListener('keydown', function(event) {
+    switch(event.keyCode) {
+        case 82:
+            location.reload(true);
+            break;
+    }
+});
+</script>
+</body>
+</html>
